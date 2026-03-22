@@ -13,6 +13,8 @@ from utils.database import create_db_and_tables, engine
 from utils.models import Secrets
 
 db_file = os.path.join(os.path.dirname(__file__), 'usr/lib/python3.14/site-packages/utils/mybase.db')
+os.makedirs(os.path.dirname(db_file), exist_ok=True)
+open(db_file, 'a').close()
 console = Console()
 app = typer.Typer()
 
