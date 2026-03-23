@@ -9,5 +9,4 @@ dependencies = [
     "sqlalchemy>=2.0.48",
     "sqlmodel>=0.0.37",
     "typer>=0.24.1",
-    "typing>=3.10.0.0",
 ]

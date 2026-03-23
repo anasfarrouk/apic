@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+
+import typer, getpass, sys, os
+from sqlmodel import Session, select
+from sqlalchemy.exc import IntegrityError
+from rich.console import Console
+from rich.table import Table
+from rich import print
+
+ays.path.append(os.path.join(os.path.dirname(__file__), "usr/lib/python3.14/site-packages"))
+from utils.encrypt import encrypt_file, decrypt_file
+from utils.database import create_db_and_tables, engine
+from utils.models import Secrets
+
+db_file = os.path.join(os.path.dirname(__file__), 'usr/lib/python3.14/site-packages/utils/mybase.db')
+console = Console()
+app = typer.Typer()
+
+def get_pass() -> (str, str, bool):
+    pwd = getpass.getpass("Enter a new password >>> ")
+    conf = getpass.getpass("Verify your password >>> ")
+    dl = pwd == conf
+    return pwd, dl
+
+def login() -> bool:
+    pwd = getpass.getpass("Enter your password >>> ")
+    try:
+        decrypt_file(db_file, pwd)
+    except Exception:
+        return pwd, False
+    return pwd, True
+
+@app.command()
+def init() -> None:
+    '''
+    Create a database for your keys and encrypt them with your password.
+    '''
+    while True:
+        pwd, dl = get_pass()
+        if dl:
+            create_db_and_tables()
+            encrypt_file(db_file, pwd)
+            print("[bold green]Database created successfully.[bold green]")
+            raise typer.Exit()
+        else:
+            print("Wrong password. Try again.")
+
+@app.command()
+def add() -> None:
+    '''
+    Add a key to your database.
+    '''
+    while True:
+        pwd, dl = login()
+        if dl:
+            key = str(input("API Key >>> "))
+            name = str(input("Key Name >>> "))
+            project = str(input("Project Name >>> "))
+            expiration_date = str(input("Expiration Date (MM-DD-YYYY) >>> "))
+            with Session(engine) as session:
+                try:
+                    new_key = Secrets(key=key,
+                                      name=name,
+                                      project=project,
+                                      expiration_date=expiration_date)
+                    session.add(new_key)
+                    session.commit()
+                except IntegrityError:
+                    session.rollback()
+                    encrypt_file(db_file, pwd)
+                    print("[bold red]Key or name already exists.[bold red]")
+                    raise typer.Exit()
+                else:
+                    encrypt_file(db_file, pwd)
+                    print("[bold green]Key added successfully.[bold green]")
+                    raise typer.Exit()
+        else:
+            print("Wrong password. Try again.")
+
+@app.command()
+def list() -> None:
+    '''
+    List all the keys stored in the database.
+    '''
+    while True:
+        pwd, dl = login()
+        if dl:
+            with Session(engine) as session:
+                statement = select(Secrets)
+                results = session.exec(statement)
+                session.rollback()
+                encrypt_file(db_file, pwd)
+                table = Table("Key", "Name", "Project", "Expire_at")
+                for secret in results:
+                    table.add_row(secret.key, secret.name, secret.project, secret.expiration_date)
+                console.print(table)
+                raise typer.Exit()
+        else:
+            print("Wrong password. Try again.")
+
+@app.command()
+def get(name:str) -> None:
+    '''
+    Get the key associated with a name.
+    '''
+    while True:
+        pwd, dl = login()
+        if dl:
+            with Session(engine) as session:
+                statement = select(Secrets).where(Secrets.name == name)
+                results = session.exec(statement)
+                encrypt_file(db_file, pwd)
+                for secret in results:
+                    print(secret.key)
+                raise typer.Exit()
+        else:
+            print("Wrong password. Try again.")
+
+@app.command()
+def remove(name:str) -> None:
+    '''
+    Remove the key associated with a name.
+    '''
+    while True:
+        pwd, dl = login()
+        if dl:
+            with Session(engine) as session:
+                try:
+                    statement = select(Secrets).where(Secrets.name == name)
+                    results = session.exec(statement)
+                    session.delete(results.one())
+                    session.commit()
+                except Exception:
+                    encrypt_file(db_file, pwd)
+                    print("[bold red]Name is not associated with a key[/bold red]")
+                    raise typer.Exit()
+                else:
+                    encrypt_file(db_file, pwd)
+                    print("[bold green]Removed key: [/bold green]", name)
+                    raise typer.Exit()
+        else:
+            print("Wrong password. Try again.")
+
+@app.command()
+def update(name:str) -> None:
+    '''
+    Update information related to the key with a name.
+    '''
+    while True:
+        pwd, dl = login()
+        if dl:
+            new_key = str(input("New API Key >>> "))
+            new_name = str(input("New Key Name >>> "))
+            new_project = str(input("New Project Name >>> "))
+            exp = str(input("New Expiration Date (MM-DD-YYYY) >>> "))
+            with Session(engine) as session:
+                try:
+                    statement = select(Secrets).where(Secrets.name == name)
+                    results = session.exec(statement)
+                    secret = results.one()
+                    if new_name != "":
+                        secret.name = new_name
+                    if new_key != "":
+                        secret.key = new_key 
+                    if new_project != "":
+                        secret.project = new_project 
+                    if exp != "":
+                        secret.expiration_date = exp 
+                    session.add(secret)
+                    session.commit()
+                except Exception:
+                    session.rollback()
+                    encrypt_file(db_file, pwd)
+                    raise typer.Exit()
+                else:
+                    encrypt_file(db_file, pwd)
+                    print("[bold green]Key updated successfully.[/bold green]")
+                    raise typer.Exit()
+        else:
+            print("Wrong password. Try again.")
+
+if __name__ == "__main__":
+    app()
+

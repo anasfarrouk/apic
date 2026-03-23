@@ -1,18 +1,24 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
-import typer, getpass, sys, os
+import typer, getpass, os
+from pathlib import Path
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
 from rich.console import Console
 from rich.table import Table
 from rich import print
 
-ays.path.append(os.path.join(os.path.dirname(__file__), "usr/lib/python3.14/site-packages"))
+#sys.path.append(os.path.join(os.path.dirname(__file__), "usr/lib/python3.14/site-packages"))
 from utils.encrypt import encrypt_file, decrypt_file
 from utils.database import create_db_and_tables, engine
 from utils.models import Secrets
 
-db_file = os.path.join(os.path.dirname(__file__), 'usr/lib/python3.14/site-packages/utils/mybase.db')
+app_dir = Path(os.environ.get("XDG_DATA_HOME", Path.home()/".local/share")) / "apic"
+app_dir.mkdir(parents=True, exist_ok=True)
+db_file = str(app_dir / "mybase.db")
+#db_file = os.path.join(os.path.dirname(__file__), 'usr/lib/python3.14/site-packages/utils/mybase.db')
+#os.makedirs(os.path.dirname(db_file), exist_ok=True)
+#open(db_file, 'a').close()
 console = Console()
 app = typer.Typer()
 
