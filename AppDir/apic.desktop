@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Apic
+Exec=AppRun
+Icon=icon
+Type=Application
+Categories=Utility;
+Terminal=true
+

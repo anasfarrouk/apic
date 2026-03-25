@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APPIMAGE_DEFAULT="apic-1.0.0-linux-x86_64.AppImage"
+APPIMAGE_DEFAULT="apic-1-linux-x86_64.AppImage"
 APPIMAGE_SOURCE="${1:-$APPIMAGE_DEFAULT}"
 
 if [[ ! -f "$APPIMAGE_SOURCE" ]]; then
@@ -11,7 +11,7 @@ if [[ ! -f "$APPIMAGE_SOURCE" ]]; then
 fi
 
 BIN_DIR="$HOME/.local/bin"
-TARGET_VERSIONED="$BIN_DIR/apic-1.0.0"
+TARGET_VERSIONED="$BIN_DIR/apic-1"
 TARGET_LINK="$BIN_DIR/apic"
 SHELL_RC=""
 
